@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "RP Design Notes",
+  "version": "1.1.0",
+  "description": "Point at any element, type what should change, attach a screenshot, then copy every note as one prompt for Claude.",
+  "permissions": [
+    "storage",
+    "downloads",
+    "downloads.ui"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Design notes (Alt+Shift+D)"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+D",
+        "mac": "Alt+Shift+D"
+      },
+      "description": "Show or hide design notes"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "css": [
+        "page.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "panel.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

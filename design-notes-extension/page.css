@@ -1,0 +1,5 @@
+/* Crosshair cursor on the page while selecting, so the mode is obvious. */
+html.rpdn-selecting,
+html.rpdn-selecting * {
+  cursor: crosshair !important;
+}

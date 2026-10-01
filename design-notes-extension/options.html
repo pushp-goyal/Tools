@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design Notes settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icons/icon48.png" alt="" width="32" height="32">
+      <div>
+        <h1>Design Notes for AI</h1>
+        <p class="muted">Click any element, say what should change, then hand every note to your AI coding agent in one go.</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>Shortcuts</h2>
+      <div class="row"><span>Show or hide the panel</span><kbd id="kShow">Not set</kbd></div>
+      <div class="row"><span>Start or pause selecting</span><kbd id="kToggle">Not set</kbd></div>
+      <p class="muted">Esc also pauses selecting. To change a shortcut, open the browser's shortcut settings.</p>
+      <button type="button" id="openShortcuts">Change shortcuts</button>
+    </section>
+
+    <section>
+      <h2>Copied text</h2>
+      <label for="intro">Instructions at the top</label>
+      <textarea id="intro" rows="5"></textarea>
+      <p class="muted">Sent before the notes. Name your project's rules here if you like.</p>
+      <button type="button" id="resetIntro">Reset to default</button>
+
+      <fieldset>
+        <legend>Format</legend>
+        <label class="inline"><input type="radio" name="format" value="markdown"> Markdown (reads well for any agent)</label>
+        <label class="inline"><input type="radio" name="format" value="json"> JSON (for scripts and tools)</label>
+      </fieldset>
+    </section>
+
+    <section>
+      <h2>Screenshots</h2>
+      <label class="inline"><input type="checkbox" id="shots"> Attach a screenshot to new notes by default</label>
+      <p class="muted">Screenshots and saved note files go to <code>Downloads/design-notes/</code>. The copied text lists each file's full path, so agents that can read local files (Claude Code, Codex CLI, Cursor, Gemini CLI, Copilot in VS Code and others) open them on their own. For a chat app in the browser, use <b>Save file</b> in the panel: it saves the notes next to the screenshots and opens the folder so you can drag everything in.</p>
+    </section>
+
+    <section id="fileAccess" hidden>
+      <h2>Local files</h2>
+      <p class="muted">To use the tool on pages opened as <code>file://</code>, open the extension's details page and turn on <b>Allow access to file URLs</b>.</p>
+      <button type="button" id="openDetails">Open extension details</button>
+    </section>
+
+    <p class="status" id="status" role="status"></p>
+  </main>
+  <script src="defaults.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

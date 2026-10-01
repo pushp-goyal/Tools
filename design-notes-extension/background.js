@@ -1,7 +1,29 @@
-// Toolbar icon (or Alt+Shift+D) shows / hides the notes tool on every tab.
+// Toolbar icon (or its shortcut, default Alt+Shift+D) shows / hides the
+// notes tool on every tab.
 chrome.action.onClicked.addListener(async () => {
   const { rpdnActive } = await chrome.storage.local.get("rpdnActive");
   await chrome.storage.local.set({ rpdnActive: !rpdnActive, rpdnPicking: !rpdnActive });
+});
+
+// "Start / pause selecting" shortcut (default Alt+S). It is a browser command,
+// so anyone can change it at chrome://extensions/shortcuts. It also shows the
+// tool if it was hidden.
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "toggle-selecting") return;
+  const { rpdnActive, rpdnPicking } = await chrome.storage.local.get(["rpdnActive", "rpdnPicking"]);
+  if (!rpdnActive) await chrome.storage.local.set({ rpdnActive: true, rpdnPicking: true });
+  else await chrome.storage.local.set({ rpdnPicking: !rpdnPicking });
+});
+
+async function shortcuts() {
+  const all = await chrome.commands.getAll();
+  const find = (name) => (all.find((c) => c.name === name) || {}).shortcut || "";
+  return { toggle: find("toggle-selecting"), show: find("_execute_action") };
+}
+
+// First install: open the settings page once so people see the shortcuts and options.
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === "install") chrome.runtime.openOptionsPage();
 });
 
 // Note count on the toolbar badge.
@@ -21,7 +43,7 @@ chrome.runtime.onInstalled.addListener(updateBadge);
 // The content script asks for a screenshot of the visible tab, cropped around
 // the picked element with a red outline. On save it goes to
 // Downloads/design-notes/ and the note keeps the full path, so the copied
-// prompt can point Claude at the file.
+// prompt can point the agent at the file.
 
 async function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
@@ -83,20 +105,20 @@ function waitForDownload(id) {
   });
 }
 
-async function saveShot(dataUrl, name) {
-  // Keep Chrome's download bubble quiet while saving.
+// Save into Downloads/design-notes/ without Chrome's download bubble.
+async function saveToDownloads(url, name) {
   try {
     await chrome.downloads.setUiOptions({ enabled: false });
   } catch (e) {}
   try {
     const id = await chrome.downloads.download({
-      url: dataUrl,
+      url,
       filename: "design-notes/" + name,
       conflictAction: "uniquify",
       saveAs: false,
     });
     const state = await waitForDownload(id);
-    if (state !== "complete") throw new Error("Screenshot was not saved");
+    if (state !== "complete") throw new Error("File was not saved");
     const [item] = await chrome.downloads.search({ id });
     return { id, path: item.filename };
   } finally {
@@ -104,6 +126,21 @@ async function saveShot(dataUrl, name) {
       await chrome.downloads.setUiOptions({ enabled: true });
     } catch (e) {}
   }
+}
+
+function saveShot(dataUrl, name) {
+  return saveToDownloads(dataUrl, name);
+}
+
+// The whole prompt as a .md / .json file next to the screenshots, then the
+// folder opens (Finder, Explorer or the Linux file manager) so the files can
+// be dragged into any chat app.
+async function saveNotesFile(text, ext) {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
+  const type = ext === "json" ? "application/json" : "text/markdown";
+  const res = await saveToDownloads("data:" + type + ";charset=utf-8," + encodeURIComponent(text), "notes-" + stamp + "." + ext);
+  chrome.downloads.show(res.id);
+  return res;
 }
 
 async function deleteShots(ids) {
@@ -121,6 +158,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   const run = async () => {
     if (msg.type === "capture") return { dataUrl: await capture(sender.tab.windowId, msg.rect, msg.view) };
     if (msg.type === "saveShot") return saveShot(msg.dataUrl, msg.name);
+    if (msg.type === "saveNotesFile") return saveNotesFile(msg.text, msg.ext);
+    if (msg.type === "shortcuts") return shortcuts();
+    if (msg.type === "settings") return chrome.runtime.openOptionsPage();
     if (msg.type === "deleteShots") return deleteShots(msg.ids);
     return null;
   };

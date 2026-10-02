@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Design Notes for AI",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Click any element on a page, say what should change, add a screenshot, then copy every note as one prompt for your AI coding agent.",
   "minimum_chrome_version": "116",
   "icons": {

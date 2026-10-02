@@ -1,19 +1,56 @@
-// Toolbar icon (or its shortcut, default Alt+Shift+D) shows / hides the
-// notes tool on every tab.
-chrome.action.onClicked.addListener(async () => {
-  const { rpdnActive } = await chrome.storage.local.get("rpdnActive");
-  await chrome.storage.local.set({ rpdnActive: !rpdnActive, rpdnPicking: !rpdnActive });
+importScripts("defaults.js");
+
+// ---------- on / off per tab ----------
+// The tool is on only in the tabs where it was turned on, and stays on in a
+// tab while it moves between pages. Session storage: everything is off again
+// after the browser restarts. Notes themselves are shared by all tabs.
+// dnTabs = { [tabId]: { picking, resume } }
+
+async function getTabs() {
+  const { dnTabs = {} } = await chrome.storage.session.get("dnTabs");
+  return dnTabs;
+}
+
+async function setTab(tabId, state, tell = true) {
+  const tabs = await getTabs();
+  if (state) tabs[tabId] = state;
+  else delete tabs[tabId];
+  await chrome.storage.session.set({ dnTabs: tabs });
+  if (tell) chrome.tabs.sendMessage(tabId, { type: "tabState", state: state || null }).catch(() => {});
+  // The badge keeps the note count; green + tooltip say it is on in this tab.
+  chrome.action.setBadgeBackgroundColor({ tabId, color: state ? "#10B981" : "#0d6efd" }).catch(() => {});
+  chrome.action.setTitle({ tabId, title: state ? "Design notes: on in this tab (click to turn off)" : "Design notes" }).catch(() => {});
+}
+
+// Opening the tool while notes from an earlier session are still there asks
+// whether to continue them or start new; selecting waits for the answer.
+async function openTab(tabId) {
+  const { rpdnNotes = [] } = await chrome.storage.local.get("rpdnNotes");
+  const old = rpdnNotes.length > 0;
+  await setTab(tabId, { picking: !old, resume: old });
+}
+
+// Toolbar icon (or its shortcut, default Alt+Shift+D) turns the tool on or
+// off in the current tab.
+chrome.action.onClicked.addListener(async (tab) => {
+  if (!tab || tab.id == null) return;
+  const tabs = await getTabs();
+  if (tabs[tab.id]) await setTab(tab.id, null);
+  else await openTab(tab.id);
 });
 
 // "Start / pause selecting" shortcut (default Alt+S). It is a browser command,
-// so anyone can change it at chrome://extensions/shortcuts. It also shows the
-// tool if it was hidden.
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command !== "toggle-selecting") return;
-  const { rpdnActive, rpdnPicking } = await chrome.storage.local.get(["rpdnActive", "rpdnPicking"]);
-  if (!rpdnActive) await chrome.storage.local.set({ rpdnActive: true, rpdnPicking: true });
-  else await chrome.storage.local.set({ rpdnPicking: !rpdnPicking });
+// so anyone can change it at chrome://extensions/shortcuts. It also turns the
+// tool on in the tab if it was off.
+chrome.commands.onCommand.addListener(async (command, tab) => {
+  if (command !== "toggle-selecting" || !tab || tab.id == null) return;
+  const tabs = await getTabs();
+  const now = tabs[tab.id];
+  if (!now) await openTab(tab.id);
+  else await setTab(tab.id, Object.assign({}, now, { picking: !now.picking }));
 });
+
+chrome.tabs.onRemoved.addListener((tabId) => setTab(tabId, null, false));
 
 async function shortcuts() {
   const all = await chrome.commands.getAll();
@@ -42,7 +79,8 @@ chrome.runtime.onInstalled.addListener(updateBadge);
 // ---------- screenshots ----------
 // The content script asks for a screenshot of the visible tab, cropped around
 // the picked element with a red outline. On save it goes to
-// Downloads/design-notes/ and the note keeps the full path, so the copied
+// the save folder inside Downloads (a setting, default design-notes) and the
+// note keeps the full path, so the copied
 // prompt can point the agent at the file.
 
 async function blobToDataUrl(blob) {
@@ -105,15 +143,23 @@ function waitForDownload(id) {
   });
 }
 
-// Save into Downloads/design-notes/ without Chrome's download bubble.
+// The save folder from the settings, checked again in case storage was edited.
+async function saveFolder() {
+  const { dnSettings } = await chrome.storage.local.get("dnSettings");
+  const r = self.DN_cleanFolder(dnSettings && dnSettings.folder);
+  return r.folder || self.DN_DEFAULTS.folder;
+}
+
+// Save into the folder inside Downloads without Chrome's download bubble.
 async function saveToDownloads(url, name) {
+  const folder = await saveFolder();
   try {
     await chrome.downloads.setUiOptions({ enabled: false });
   } catch (e) {}
   try {
     const id = await chrome.downloads.download({
       url,
-      filename: "design-notes/" + name,
+      filename: folder + "/" + name,
       conflictAction: "uniquify",
       saveAs: false,
     });
@@ -161,6 +207,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (msg.type === "saveNotesFile") return saveNotesFile(msg.text, msg.ext);
     if (msg.type === "shortcuts") return shortcuts();
     if (msg.type === "settings") return chrome.runtime.openOptionsPage();
+    if (msg.type === "tabState") return (await getTabs())[sender.tab.id] || null;
+    if (msg.type === "tabSet") {
+      const now = (await getTabs())[sender.tab.id];
+      if (!msg.patch) return setTab(sender.tab.id, null, false);
+      if (now) return setTab(sender.tab.id, Object.assign({}, now, msg.patch), false);
+      return null;
+    }
     if (msg.type === "deleteShots") return deleteShots(msg.ids);
     return null;
   };

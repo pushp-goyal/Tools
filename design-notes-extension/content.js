@@ -6,8 +6,6 @@
   if (window.top !== window) return;
 
   const K_NOTES = "rpdnNotes";
-  const K_ACTIVE = "rpdnActive";
-  const K_PICK = "rpdnPicking";
   const K_DOCK = "rpdnDockLeft";
   const K_SETTINGS = "dnSettings";
 
@@ -18,6 +16,7 @@
   let active = false;
   let picking = false;
   let dockLeft = false;
+  let resume = false;
   let minimized = false;
   let settings = Object.assign({}, DEFAULT_SETTINGS);
   let keys = { toggle: "Alt+S", show: "Alt+Shift+D" };
@@ -275,9 +274,15 @@
     chrome.storage.local.set({ [K_NOTES]: notes });
   }
 
+  // On / selecting / "continue or start new" belong to this tab only; the
+  // background keeps them so they survive moving between pages in the tab.
+  function setTab(patch) {
+    send({ type: "tabSet", patch });
+  }
+
   function setPicking(on) {
     picking = on;
-    chrome.storage.local.set({ [K_PICK]: on });
+    setTab({ picking: on });
     renderPanel();
     if (!on) hideHover();
   }
@@ -303,6 +308,13 @@
             <button class="icon" data-act="dock" title="Move to other side">&#8646;</button>
             <button class="icon" data-act="min" title="Minimize">-</button>
             <button class="icon" data-act="close">&#10005;</button>
+          </div>
+          <div class="resume">
+            <div class="resume-txt"></div>
+            <div class="resume-actions">
+              <button data-act="start-new">Start new</button>
+              <button class="primary" data-act="continue">Continue</button>
+            </div>
           </div>
           <div class="body">
             <div class="bar">
@@ -391,10 +403,24 @@
         chrome.storage.local.set({ [K_DOCK]: dockLeft });
         renderPanel();
       } else if (act === "settings") send({ type: "settings" });
-      else if (act === "close") chrome.storage.local.set({ [K_ACTIVE]: false });
+      else if (act === "close") {
+        setTab(null);
+        applyTab(null);
+      }
       else if (act === "copy") onCopy();
       else if (act === "file") onFile();
       else if (act === "clear") onClear();
+      else if (act === "continue") {
+        setTab({ resume: false, picking: true });
+        applyTab({ resume: false, picking: true });
+      }
+      else if (act === "start-new") {
+        dropShots(notes);
+        notes = [];
+        saveNotes();
+        setTab({ resume: false, picking: true });
+        applyTab({ resume: false, picking: true });
+      }
       else if (act === "snap") snapScreen();
       else if (act === "del") {
         dropShots(notes.splice(Number(btn.dataset.i), 1));
@@ -461,10 +487,16 @@
     panel.classList.toggle("min", minimized);
     panel.classList.toggle("left", dockLeft);
     countEl.textContent = notes.length;
+    const asking = resume && notes.length > 0;
+    panel.classList.toggle("asking", asking);
+    if (asking) {
+      root.querySelector(".resume-txt").textContent =
+        "You have " + notes.length + (notes.length === 1 ? " note" : " notes") + " from before. Continue with them, or start new? Start new deletes them and their screenshots.";
+    }
     pickBtn.querySelector(".pick-txt").textContent = picking ? "Selecting" : "Paused";
     pickBtn.classList.toggle("on", picking);
     pickBtn.title = "Start / pause selecting" + (keys.toggle ? " (" + keys.toggle + ")" : "");
-    root.querySelector('[data-act="close"]').title = "Hide" + (keys.show ? " (" + keys.show + ")" : "");
+    root.querySelector('[data-act="close"]').title = "Hide, notes are kept" + (keys.show ? " (" + keys.show + ")" : "");
 
     hintEl.textContent = "";
     const b = document.createElement("b");
@@ -776,12 +808,23 @@
 
   // ---------- state ----------
 
+  // Shared across tabs: notes, dock side, settings.
   function applyState(s) {
     if (K_NOTES in s) notes = s[K_NOTES] || [];
-    if (K_ACTIVE in s) active = !!s[K_ACTIVE];
-    if (K_PICK in s) picking = !!s[K_PICK];
     if (K_DOCK in s) dockLeft = !!s[K_DOCK];
     if (K_SETTINGS in s) settings = Object.assign({}, DEFAULT_SETTINGS, s[K_SETTINGS] || {});
+    refresh();
+  }
+
+  // This tab only: null = off, otherwise { picking, resume }.
+  function applyTab(state) {
+    active = !!state;
+    picking = !!(state && state.picking);
+    resume = !!(state && state.resume);
+    refresh();
+  }
+
+  function refresh() {
     if (active && !host) build();
     if (!active) {
       hideHover();
@@ -791,7 +834,13 @@
     renderPanel();
   }
 
-  chrome.storage.local.get([K_NOTES, K_ACTIVE, K_PICK, K_DOCK, K_SETTINGS], applyState);
+  chrome.storage.local.get([K_NOTES, K_DOCK, K_SETTINGS], (s) => {
+    applyState(s);
+    send({ type: "tabState" }).then(applyTab);
+  });
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.type === "tabState") applyTab(msg.state);
+  });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     const s = {};

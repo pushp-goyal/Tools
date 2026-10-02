@@ -347,3 +347,23 @@ textarea:focus {
   border-radius: 999px;
   padding: 0 7px;
 }
+
+/* "Continue or start new" when the tool opens with notes from before */
+.resume {
+  display: none;
+  padding: 10px;
+  background: #FFFBEB;
+  border-bottom: 1px solid #FDE68A;
+  font-size: 12px;
+}
+
+.panel.asking .resume {
+  display: block;
+}
+
+.resume-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}

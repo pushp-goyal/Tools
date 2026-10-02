@@ -9,12 +9,17 @@ function load() {
     const v = Object.assign({}, self.DN_DEFAULTS, s[K] || {});
     $("intro").value = v.intro;
     $("shots").checked = v.shots !== false;
+    $("folder").value = v.folder;
     document.querySelector('input[name="format"][value="' + v.format + '"]').checked = true;
   });
 }
 
 function save() {
+  const f = self.DN_cleanFolder($("folder").value);
+  $("folderError").textContent = f.error || "";
+  if (f.error) return;
   const v = {
+    folder: f.folder,
     intro: $("intro").value.trim() || self.DN_DEFAULTS.intro,
     shots: $("shots").checked,
     format: document.querySelector('input[name="format"]:checked').value,
@@ -31,6 +36,15 @@ $("intro").addEventListener("input", () => {
   timer = setTimeout(save, 400);
 });
 $("shots").addEventListener("change", save);
+$("folder").addEventListener("input", () => {
+  clearTimeout(timer);
+  timer = setTimeout(save, 500);
+});
+// Show the cleaned name (slashes trimmed, empty = default) once the field is left.
+$("folder").addEventListener("change", () => {
+  const f = self.DN_cleanFolder($("folder").value);
+  if (f.folder) $("folder").value = f.folder;
+});
 document.querySelectorAll('input[name="format"]').forEach((r) => r.addEventListener("change", save));
 $("resetIntro").addEventListener("click", () => {
   $("intro").value = self.DN_DEFAULTS.intro;

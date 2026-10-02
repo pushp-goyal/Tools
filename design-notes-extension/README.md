@@ -28,23 +28,32 @@ To update later: replace the folder with the new version (or `git pull`), then c
 
 | Action | How |
 |---|---|
-| Show or hide the panel | Toolbar icon, or **Alt+Shift+D** |
+| Turn it on or off in this tab | Toolbar icon, the panel's **X**, or **Alt+Shift+D**. It stays on in that tab while you move between pages; other tabs are not touched. Notes are shared by all tabs |
 | Start or pause selecting | **Alt+S**, the Selecting / Paused pill in the panel, or **Esc** to pause |
 | Add a note | While selecting, click an element, type, press **Enter** (Shift+Enter for a new line) |
 | Note about the whole screen | **Screenshot** button in the panel |
 | Edit or delete a note | Click it in the panel |
 | Hand the notes to your agent | **Copy all**, or **Save file** (see below) |
-| Start over | **Clear** (click twice) |
+| Start over | **Clear** (click twice). Opening the panel again while old notes are still there asks: **Continue** or **Start new** |
 
 On a Mac, Alt is the Option key. You can change both shortcuts at `chrome://extensions/shortcuts`; the settings page (gear icon in the panel) shows the current ones.
 
 While selecting, the cursor is a crosshair and clicks on the page only add notes. Pause to use the page normally (open a dialog, scroll, log in, change pages), then start again. Notes stay when you change pages, and noted elements get an orange number.
 
+## Turning it off
+
+- **In one tab:** toolbar icon, the panel's **X**, or **Alt+Shift+D**. When it's on in a tab, the badge on the toolbar icon turns green there
+- **Everywhere, for now:** switch it off on the browser's extensions page. Notes and settings are kept
+- **Only on some sites:** on the extension's **Details** page, set **Site access** to **On specific sites** (for example only `localhost`)
+- **For good:** **Remove** it on the extensions page. Notes and settings are deleted; screenshots in Downloads stay
+
+Closing the browser turns it off in every tab. Notes stay until you clear them.
+
 ## Giving the notes to your agent
 
 **Agents that can read files on your computer** (Claude Code, Codex CLI, Cursor, Copilot in VS Code, Gemini CLI, Aider, Windsurf and similar): click **Copy all** and paste. Screenshot paths are in the text, so the agent opens the images itself. Some agents ask permission the first time they read from Downloads.
 
-**Chat apps in the browser** (ChatGPT, Claude.ai, Gemini and similar) cannot open paths on your computer. Click **Save file**: the notes are saved as a file next to the screenshots in `Downloads/design-notes/`, and that folder opens. Drag the notes file and the screenshots into the chat, or paste the copied text and drag in just the images.
+**Chat apps in the browser** (ChatGPT, Claude.ai, Gemini and similar) cannot open paths on your computer. Click **Save file**: the notes are saved as a file next to the screenshots in the save folder (`Downloads/design-notes/` unless you change it), and that folder opens. Drag the notes file and the screenshots into the chat, or paste the copied text and drag in just the images.
 
 ## What gets copied
 
@@ -75,13 +84,14 @@ Open them from the gear icon in the panel, or the extension's **Details** > **Ex
 - **Instructions at the top:** the sentence that goes before the notes. Mention your project's rules or stack if you like
 - **Format:** Markdown (default, reads well for any agent) or JSON (for scripts and tools)
 - **Screenshots:** whether new notes attach one by default
+- **Save folder:** where screenshots and note files go, as a folder inside Downloads (default `design-notes`, for example `my-app/ui-review`). Browsers only let extensions save inside Downloads; to use another drive or folder, change the browser's own download location. Changing the folder does not move files already saved
 
 ## Privacy
 
 The extension has no server and sends nothing anywhere. It needs these permissions:
 
 - **Read and change data on all sites:** to show the panel and highlight elements on whatever page you review, and to take the screenshot. It does nothing on a page until you open the panel
-- **Downloads:** to save screenshots and note files to `Downloads/design-notes/`, and to delete a screenshot when you delete its note
+- **Downloads:** to save screenshots and note files to the save folder inside Downloads, and to delete a screenshot when you delete its note
 - **Storage:** to keep your notes and settings in the browser
 
 ## Limits

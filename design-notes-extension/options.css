@@ -146,3 +146,48 @@ code {
   color: #10B981;
   min-height: 20px;
 }
+
+.mt {
+  margin-top: 14px;
+}
+
+.prefix-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.prefix-input:focus-within {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+
+.prefix-input span {
+  padding: 7px 0 7px 10px;
+  color: var(--muted);
+  font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.prefix-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  padding: 7px 10px 7px 0;
+  font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.error {
+  color: #DC2626;
+  font-size: 13px;
+  margin: 6px 0 0;
+  min-height: 0;
+}
+
+.error:empty {
+  display: none;
+}

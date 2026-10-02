@@ -41,7 +41,15 @@
     <section>
       <h2>Screenshots</h2>
       <label class="inline"><input type="checkbox" id="shots"> Attach a screenshot to new notes by default</label>
-      <p class="muted">Screenshots and saved note files go to <code>Downloads/design-notes/</code>. The copied text lists each file's full path, so agents that can read local files (Claude Code, Codex CLI, Cursor, Gemini CLI, Copilot in VS Code and others) open them on their own. For a chat app in the browser, use <b>Save file</b> in the panel: it saves the notes next to the screenshots and opens the folder so you can drag everything in.</p>
+
+      <label for="folder" class="mt">Save folder</label>
+      <div class="prefix-input">
+        <span>Downloads/</span>
+        <input type="text" id="folder" spellcheck="false" autocomplete="off">
+      </div>
+      <p class="error" id="folderError" role="alert"></p>
+      <p class="muted">Where screenshots and saved note files go, for example <code>design-notes</code> or <code>my-app/ui-review</code>. Browsers only let extensions save inside Downloads; to use another drive or folder, change the browser's own download location. Changing this does not move files already saved.</p>
+      <p class="muted">The copied text lists each file's full path, so agents that can read local files (Claude Code, Codex CLI, Cursor, Gemini CLI, Copilot in VS Code and others) open them on their own. For a chat app in the browser, use <b>Save file</b> in the panel: it saves the notes next to the screenshots and opens the folder so you can drag everything in.</p>
     </section>
 
     <section id="fileAccess" hidden>
